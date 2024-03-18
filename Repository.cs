@@ -13,10 +13,15 @@ public interface IRepository<TEntity> where TEntity : class
 
     Task<TEntity> GetByIdAsync(object id);
 
+    Task<TEntity> GetByIdAsNoTrackingAsync(object id);
+
     Task<List<TEntity>?> GetItemsAsync(
         Expression<Func<TEntity, bool>>? filter = null,
         Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
         string includeProperties = "");
+
+    int SaveChanges();
+    Task<int> SaveChangesAsync();
 
     IQueryable<TEntity> QueryableEntity();
 }
@@ -58,6 +63,15 @@ public class Repository<TEntity, TDataContext>(TDataContext context) : IReposito
         return entity!;
     }
 
+    public async Task<TEntity> GetByIdAsNoTrackingAsync(object id)
+    {
+        TEntity? entity = await _dbSet
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => EF.Property<object>(e, "Id").Equals(id));
+
+        return entity!;
+    }
+
     public async Task<List<TEntity>?> GetItemsAsync(
         Expression<Func<TEntity, bool>>? filter = null,
         Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
@@ -66,6 +80,8 @@ public class Repository<TEntity, TDataContext>(TDataContext context) : IReposito
         try
         {
             IQueryable<TEntity>? query = _dbSet;
+
+            query = query.AsNoTracking();
 
             if (filter != null)
             {
@@ -100,5 +116,15 @@ public class Repository<TEntity, TDataContext>(TDataContext context) : IReposito
     {
         IQueryable<TEntity>? query = _dbSet;
         return query.AsQueryable();
+    }
+
+    public int SaveChanges()
+    {
+        return _context.SaveChanges();
+    }
+
+    public async Task<int> SaveChangesAsync()
+    {
+        return await _context.SaveChangesAsync();
     }
 }
