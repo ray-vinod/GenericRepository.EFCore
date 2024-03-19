@@ -97,16 +97,17 @@ public class UnitOfWork : IUnitOfWork
 > In Endpoint OR Controller
 
 ```code
-app.MapGet("/api/products", async (IProductRepository productRepository) =>
+app.MapGet("/api/products", async (IUnitOfWork unitOfWork) =>
 {
-    var products = await productRepository.GetItemsAsync()
-    return products;
+    var products = await unitOfWork.Products.GetItemsAsync()
+    return Resutls.Ok(products);
 });
 
-app.MapPost("/api/product/create", async (IProductRepository productRepository, Product product) =>
+app.MapPost("/api/product/create", async (IUnitOfWork unitOfWork, Product product) =>
 {
-    await productRepository.CreateAsync(product);
-    await productRepository.SaveChanges()
-    return new { Product = product, Status = "Success" };
+    await unitOfWork.Products.CreateAsync(product);
+    await unitOfWork.SaveChangesAsync()
+
+    return Results.Ok(new { Product = product, Status = "Success" });
 });
 ```
