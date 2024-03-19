@@ -11,17 +11,12 @@ public interface IRepository<TEntity> where TEntity : class
     Task<TEntity> CreateAsync(TEntity entity);
     Task<TEntity> UpdateAsync(TEntity entity);
 
-    Task<TEntity> GetByIdAsync(object id);
-
-    Task<TEntity> GetByIdAsNoTrackingAsync(object id);
+    Task<TEntity?> GetByIdAsync(object id);
 
     Task<List<TEntity>?> GetItemsAsync(
         Expression<Func<TEntity, bool>>? filter = null,
         Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
         string includeProperties = "");
-
-    int SaveChanges();
-    Task<int> SaveChangesAsync();
 
     IQueryable<TEntity> QueryableEntity();
 }
@@ -31,7 +26,8 @@ public class Repository<TEntity, TDataContext>(TDataContext context) : IReposito
       where TEntity : class
       where TDataContext : DbContext
 {
-    protected readonly TDataContext _context = context;
+    protected readonly TDataContext _context = context
+        ?? throw new ArgumentNullException(nameof(context));
     internal DbSet<TEntity> _dbSet = context.Set<TEntity>();
 
     public async Task<TEntity> CreateAsync(TEntity entity)
@@ -42,8 +38,12 @@ public class Repository<TEntity, TDataContext>(TDataContext context) : IReposito
 
     public async Task<bool> DeleteAsync(TEntity entity)
     {
+        IsEntityNull(entity);
+
         if (_context.Entry(entity).State == EntityState.Detached)
+        {
             _dbSet.Attach(entity);
+        }
 
         _dbSet.Remove(entity);
         _context.Entry(entity).State = EntityState.Deleted;
@@ -57,19 +57,10 @@ public class Repository<TEntity, TDataContext>(TDataContext context) : IReposito
         return await DeleteAsync(entity!);
     }
 
-    public async Task<TEntity> GetByIdAsync(object id)
+    public async Task<TEntity?> GetByIdAsync(object id)
     {
         TEntity? entity = await _dbSet.FindAsync(id);
-        return entity!;
-    }
-
-    public async Task<TEntity> GetByIdAsNoTrackingAsync(object id)
-    {
-        TEntity? entity = await _dbSet
-            .AsNoTracking()
-            .FirstOrDefaultAsync(e => EF.Property<object>(e, "Id").Equals(id));
-
-        return entity!;
+        return entity;
     }
 
     public async Task<List<TEntity>?> GetItemsAsync(
@@ -88,8 +79,8 @@ public class Repository<TEntity, TDataContext>(TDataContext context) : IReposito
                 query = query.Where(filter);
             }
 
-            foreach (var includeProperty in includeProperties.Split
-                (new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+            foreach (var includeProperty in includeProperties
+                .Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
             {
                 query = query.Include(includeProperty);
             }
@@ -106,6 +97,8 @@ public class Repository<TEntity, TDataContext>(TDataContext context) : IReposito
 
     public async Task<TEntity> UpdateAsync(TEntity entity)
     {
+        IsEntityNull(entity);
+
         var dbSet = _context.Set<TEntity>();
         dbSet.Attach(entity);
         _context.Entry(entity).State = EntityState.Modified;
@@ -118,13 +111,11 @@ public class Repository<TEntity, TDataContext>(TDataContext context) : IReposito
         return query.AsQueryable();
     }
 
-    public int SaveChanges()
+    private static void IsEntityNull(TEntity entity)
     {
-        return _context.SaveChanges();
-    }
-
-    public async Task<int> SaveChangesAsync()
-    {
-        return await _context.SaveChangesAsync();
+        if (entity == null)
+        {
+            throw new ArgumentNullException(nameof(entity));
+        }
     }
 }
