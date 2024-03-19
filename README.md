@@ -11,8 +11,8 @@
 ```code
 public interface IUnitOfWork : IDisposable
 {
-    IRepository&lt;Category&gt; Categories { get; }
-    IRepository&lt;Product&gt; Products { get; }
+    IRepository<Category> Categories { get; }
+    IRepository<Product> Products { get; }
 
     Task<int> SaveChangesAsync();
 }
@@ -26,20 +26,20 @@ public class UnitOfWork : IUnitOfWork
     {
         _contex = contex;
 
-        Categories = new Repository&lt;Category, AppDbContext7gt;(_contex);
-        Products = new Repository&lt;Product, AppDbContext&gt;(_contex);
+        Categories = new Repository<Category, AppDbContext>(_contex);
+        Products = new Repository<Product, AppDbContext>(_contex);
     }
 
 
-    public IRepository&lt;Category&gt; Categories { get; private set; }
-    public IRepository&lt;Product&gt; Products { get; private set; }
+    public IRepository<Category> Categories { get; private set; }
+    public IRepository<Product> Products { get; private set; }
 
 
 
     public void Dispose()
         => _contex.Dispose();
 
-    public async Task&lt;int&gt; SaveChangesAsync()
+    public async Task<int> SaveChangesAsync()
         => await _contex.SaveChangesAsync();
 }
 ```
@@ -76,20 +76,20 @@ public class UnitOfWork : IUnitOfWork
     {
         _contex = contex;
 
-        Categories = new Repository&lt;Category, AppDbContext7gt;(_contex);
+        Categories = new Repository<Category, AppDbContext>(_contex);
         Products = new ProductRepository(_contex);
     }
 
 
-    public IRepository&lt;Category&gt; Categories { get; private set; }
-    public IRepository&lt;Product&gt; Products { get; private set; }
+    public IRepository<Category> Categories { get; private set; }
+    public IRepository<Product> Products { get; private set; }
 
 
 
     public void Dispose()
         => _contex.Dispose();
 
-    public async Task&lt;int&gt; SaveChangesAsync()
+    public async Task<int> SaveChangesAsync()
         => await _contex.SaveChangesAsync();
 }
 ```
