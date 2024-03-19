@@ -9,7 +9,7 @@
 ### Method : 1
 
 ```code
-public interface IDb : IDisposable
+public interface IUnitOfWork : IDisposable
 {
     IRepository&lt;Category&gt; Categories { get; }
     IRepository&lt;Product&gt; Products { get; }
@@ -18,11 +18,11 @@ public interface IDb : IDisposable
 }
 
 
-public class Db : IDb
+public class UnitOfWork : IUnitOfWork
 {
     private readonly AppDbContext _contex;
 
-    public Db(AppDbContext contex)
+    public UnitOfWork(AppDbContext contex)
     {
         _contex = contex;
 
@@ -47,7 +47,7 @@ public class Db : IDb
 > In Program.cs
 
 ```code
-services.AddTransient<IDb, Db>();
+services.AddTransient<IUnitOfWork, UnitOfWork>();
 ```
 
 ### Method : 2
@@ -55,23 +55,43 @@ services.AddTransient<IDb, Db>();
 ```code
 public interface IProductRepository : IRepository<Product>
 {
-    Task<int> SaveChanges();
+    bool Status();
 }
 
 
 public class ProductRepository(TestDbContext context)
     : Repository<Product, TestDbContext>(context), IProductRepository
 {
-    public async Task<int> SaveChanges()
-        => await context.SaveChangesAsync();
+    public bool Status()
+        => true;
 }
 ```
 
-> In Program.cs
-
 ```code
-services.AddTransient&lt;ICategoryRepository, CategoryRepository&gt;();
-services.AddTransient&lt;IProductRepository, ProductRepository&gt;();
+public class UnitOfWork : IUnitOfWork
+{
+    private readonly AppDbContext _contex;
+
+    public UnitOfWork(AppDbContext contex)
+    {
+        _contex = contex;
+
+        Categories = new Repository&lt;Category, AppDbContext7gt;(_contex);
+        Products = new ProductRepository(_contex);
+    }
+
+
+    public IRepository&lt;Category&gt; Categories { get; private set; }
+    public IRepository&lt;Product&gt; Products { get; private set; }
+
+
+
+    public void Dispose()
+        => _contex.Dispose();
+
+    public async Task&lt;int&gt; SaveChangesAsync()
+        => await _contex.SaveChangesAsync();
+}
 ```
 
 > In Endpoint OR Controller
