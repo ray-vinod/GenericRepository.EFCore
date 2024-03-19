@@ -101,7 +101,8 @@ app.MapGet("/api/products", async (IProductRepository productRepository) =>
 {
     var products = await productRepository.GetItemsAsync()
     return products;
-})
+});
+
 app.MapPost("/api/product/create", async (IProductRepository productRepository, Product product) =>
 {
     await productRepository.CreateAsync(product);
