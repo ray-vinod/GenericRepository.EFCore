@@ -49,7 +49,8 @@ public class UnitOfWork : IUnitOfWork
 > In Program.cs
 
 ```code
-services.AddTransient&lt;IUnitOfWork, UnitOfWork&gt;();
+// &lt; for '<' and &gt; for '>'
+services.AddTransient<IUnitOfWork, UnitOfWork>();
 ```
 
 ### Method : 2
