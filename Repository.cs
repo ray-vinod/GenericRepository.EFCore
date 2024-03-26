@@ -5,41 +5,53 @@ namespace GenericRepository;
 
 public interface IRepository<TEntity> where TEntity : class
 {
-    Task<bool> DeleteAsync(TEntity entity);
-    Task<bool> DeleteAsync(object id);
+    IQueryable<TEntity> GetEntity();
 
-    Task<TEntity> CreateAsync(TEntity entity);
+    Task<TEntity?> FirstOrDefaultAsync(Expression<Func<TEntity, bool>>? predicate = null);
+    Task<TEntity?> GetByIdAsync(object id);
+    Task<TEntity?> GetByNameAsync(string name);
+    Task<List<TEntity>?> GetAllAsync();
+
+    Task<TEntity> AddAsync(TEntity entity);
+    Task<TEntity> AddRangeAsync(TEntity[] entity);
+
     Task<TEntity> UpdateAsync(TEntity entity);
 
-    Task<TEntity?> GetByIdAsync(object id);
-
-    Task<List<TEntity>?> GetItemsAsync(
-        Expression<Func<TEntity, bool>>? filter = null,
-        Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
-        string includeProperties = "");
-
-    IQueryable<TEntity> QueryableEntity();
+    Task<TEntity> DeleteAsync(object id);
+    Task<TEntity> DeleteAsync(TEntity entity);
 }
 
 
-public class Repository<TEntity, TDataContext>(TDataContext context) : IRepository<TEntity>
-      where TEntity : class
-      where TDataContext : DbContext
+public class Repository<TEntity, TDataContext>(TDataContext context)
+    : IRepository<TEntity>
+    where TEntity : class
+    where TDataContext : DbContext
 {
     protected readonly TDataContext _context = context
         ?? throw new ArgumentNullException(nameof(context));
+
     internal DbSet<TEntity> _dbSet = context.Set<TEntity>();
 
-    public async Task<TEntity> CreateAsync(TEntity entity)
+    public async Task<TEntity> AddAsync(TEntity entity)
     {
         await _dbSet.AddAsync(entity);
         return entity;
     }
 
-    public async Task<bool> DeleteAsync(TEntity entity)
+    public async Task<TEntity> AddRangeAsync(TEntity[] entity)
     {
-        IsEntityNull(entity);
+        await _dbSet.AddRangeAsync(entity);
+        return entity.Last();
+    }
 
+    public async Task<TEntity> DeleteAsync(object id)
+    {
+        TEntity? entity = await _dbSet.FindAsync(id);
+        return await DeleteAsync(entity!);
+    }
+
+    public async Task<TEntity> DeleteAsync(TEntity entity)
+    {
         if (_context.Entry(entity).State == EntityState.Detached)
         {
             _dbSet.Attach(entity);
@@ -48,74 +60,67 @@ public class Repository<TEntity, TDataContext>(TDataContext context) : IReposito
         _dbSet.Remove(entity);
         _context.Entry(entity).State = EntityState.Deleted;
 
-        return await Task.FromResult(true);
-    }
-
-    public async Task<bool> DeleteAsync(object id)
-    {
-        TEntity? entity = await _dbSet.FindAsync(id);
-        return await DeleteAsync(entity!);
-    }
-
-    public async Task<TEntity?> GetByIdAsync(object id)
-    {
-        TEntity? entity = await _dbSet.FindAsync(id);
-        return entity;
-    }
-
-    public async Task<List<TEntity>?> GetItemsAsync(
-        Expression<Func<TEntity, bool>>? filter = null,
-        Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
-        string includeProperties = "")
-    {
-        try
-        {
-            IQueryable<TEntity>? query = _dbSet;
-
-            query = query.AsNoTracking();
-
-            if (filter != null)
-            {
-                query = query.Where(filter);
-            }
-
-            foreach (var includeProperty in includeProperties
-                .Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
-            {
-                query = query.Include(includeProperty);
-            }
-
-            return orderBy == null
-                ? await query.ToListAsync()
-                : await orderBy(query).ToListAsync();
-        }
-        catch (Exception)
-        {
-            return null!;
-        }
-    }
-
-    public async Task<TEntity> UpdateAsync(TEntity entity)
-    {
-        IsEntityNull(entity);
-
-        var dbSet = _context.Set<TEntity>();
-        dbSet.Attach(entity);
-        _context.Entry(entity).State = EntityState.Modified;
         return await Task.FromResult(entity);
     }
 
-    public virtual IQueryable<TEntity> QueryableEntity()
+    public IQueryable<TEntity> GetEntity()
     {
         IQueryable<TEntity>? query = _dbSet;
         return query.AsQueryable();
     }
 
-    private static void IsEntityNull(TEntity entity)
+    public async Task<TEntity?> FirstOrDefaultAsync(Expression<Func<TEntity, bool>>? predicate = null)
     {
-        if (entity == null)
+        try
         {
-            throw new ArgumentNullException(nameof(entity));
+            IQueryable<TEntity>? query = _dbSet;
+
+            if (predicate != null)
+            {
+                query = query.Where(predicate);
+            }
+
+            return await query.FirstOrDefaultAsync();
         }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    public async Task<List<TEntity>?> GetAllAsync()
+    {
+        return await GetEntity().ToListAsync();
+    }
+
+    public async Task<TEntity?> GetByIdAsync(object id)
+    {
+        return await _dbSet.FindAsync(id);
+    }
+
+    public async Task<TEntity?> GetByNameAsync(string name)
+    {
+        try
+        {
+            if (_dbSet.Where(e => EF.Property<bool>(e, "Name")) != null)
+            {
+                var entity = _dbSet.FirstOrDefault(entity => EF.Property<string>(entity, "Name") == name);
+                return await Task.FromResult(entity);
+            }
+
+            throw new InvalidOperationException($"Entity {nameof(TEntity)} has not Name property");
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    public async Task<TEntity> UpdateAsync(TEntity entity)
+    {
+        var dbSet = _context.Set<TEntity>();
+        dbSet.Attach(entity);
+        _context.Entry(entity).State = EntityState.Modified;
+        return await Task.FromResult(entity);
     }
 }

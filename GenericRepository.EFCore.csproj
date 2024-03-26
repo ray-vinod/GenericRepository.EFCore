@@ -5,11 +5,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageId>GenericRepository.EFCore </PackageId>
-    <Version>1.0.2</Version>
+    <Version>1.0.5</Version>
     <Authors>ray-vinod</Authors>
     <Company>Self</Company>
     <Description>It's a generic repository of ef core 8.0. It has CRUD operation and read entity with expressions filter and queryable entity on which you can apply linq extensions.</Description>
-    <PackageTags>AspNetCore;EFCore;EntityFrameworkCore;GenericRepository Repository</PackageTags>
+    <PackageTags>AspNetCore;EF Core;EntityFramework Core;Generic Repository Repository</PackageTags>
     <PackageProjectUrl>https://github.com/ray-vinod/MinimalApiEndpoints</PackageProjectUrl>
     <License>MIT</License>
   </PropertyGroup>

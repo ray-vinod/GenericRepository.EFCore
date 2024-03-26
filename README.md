@@ -3,6 +3,7 @@
 - This is a generic repository of basic **CRUD** operation
 - In This read entities with expression filters, sorting and include other dependent entities
 - It also return a queryable entity on which you can apply other linq operation
+- In this version added GetByName() method and GetItemsAsync() change into GetAllAsync() with no predicate for detail go through examples
 
 ## How to Use
 
@@ -11,6 +12,7 @@
 ```code
 public interface IUnitOfWork : IDisposable
 {
+    // map repository name as DbSet in DbContext for convineant
     IRepository<Category> Categories { get; }
     IRepository<Product> Products { get; }
 
@@ -47,6 +49,7 @@ public class UnitOfWork : IUnitOfWork
 > In Program.cs
 
 ```code
+// &lt; for '<' and &gt; for '>'
 services.AddTransient<IUnitOfWork, UnitOfWork>();
 ```
 
@@ -99,14 +102,54 @@ public class UnitOfWork : IUnitOfWork
 ```code
 app.MapGet("/api/products", async (IUnitOfWork unitOfWork) =>
 {
-    var products = await unitOfWork.Products.GetItemsAsync()
+    var products = await unitOfWork.Products.GetAllAsync();
     return Resutls.Ok(products);
 });
 
+app.MapGet("/api/products/{id:int}", async (int id, IUnitOfWork unitOfWork) =>
+{
+    var products = await unitOfWork.Products.GetByIdAsync(id);
+    return Resutls.Ok(products);
+});
+
+app.MapGet("/api/products/{id:int}", async (int id, IUnitOfWork unitOfWork) =>
+{
+    var products = await unitOfWork.Products.FirstOrDefaultAsync(x=>x.Id == id);
+    return Resutls.Ok(products);
+});
+
+app.MapGet("/api/products/{name}", async (string name, IUnitOfWork unitOfWork) =>
+{
+    var products = await unitOfWork.Products.GetByNameAsync(name);
+    return Resutls.Ok(products);
+});
+
+app.MapGet("/api/products/{name}", async (string name, IUnitOfWork unitOfWork) =>
+{
+    var products = await unitOfWork.Products.FirstOrDefaultAsync(x=>x.Name == name);
+    return Resutls.Ok(products);
+});
+
+
 app.MapPost("/api/product/create", async (IUnitOfWork unitOfWork, Product product) =>
 {
-    await unitOfWork.Products.CreateAsync(product);
+    await unitOfWork.Products.AddAsync(product);
     await unitOfWork.SaveChangesAsync()
+
+    return Results.Ok(new { Product = product, Status = "Success" });
+});
+
+app.MapPost("/api/product/{id:int}", async (int id, IUnitOfWork unitOfWork) =>
+{
+    var product = await unitOfWork.Products.GetEntity()
+                                    .Include(x=>x.Category)
+                                    .Where(x=>x.Id == id)
+                                    .FirstOrDefaultAsync();
+
+    var products = await unitOfWork.Products.GetEntity()
+                                    .Include(x=>x.Category)
+                                    .Where(x=>x.Id == id)
+                                    .ToListAsync();
 
     return Results.Ok(new { Product = product, Status = "Success" });
 });
