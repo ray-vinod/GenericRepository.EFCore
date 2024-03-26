@@ -17,8 +17,9 @@ public interface IRepository<TEntity> where TEntity : class
 
     Task<TEntity> UpdateAsync(TEntity entity);
 
-    Task<TEntity> DeleteAsync(object id);
-    Task<TEntity> DeleteAsync(TEntity entity);
+    Task<TEntity> RemoveAsync(object id);
+    Task<TEntity> RemoveAsync(TEntity entity);
+    Task<TEntity> RemoveRangeAsync(TEntity[] entity);
 }
 
 
@@ -44,13 +45,13 @@ public class Repository<TEntity, TDataContext>(TDataContext context)
         return entity.Last();
     }
 
-    public async Task<TEntity> DeleteAsync(object id)
+    public async Task<TEntity> RemoveAsync(object id)
     {
         TEntity? entity = await _dbSet.FindAsync(id);
-        return await DeleteAsync(entity!);
+        return await RemoveAsync(entity!);
     }
 
-    public async Task<TEntity> DeleteAsync(TEntity entity)
+    public async Task<TEntity> RemoveAsync(TEntity entity)
     {
         if (_context.Entry(entity).State == EntityState.Detached)
         {
@@ -122,5 +123,11 @@ public class Repository<TEntity, TDataContext>(TDataContext context)
         dbSet.Attach(entity);
         _context.Entry(entity).State = EntityState.Modified;
         return await Task.FromResult(entity);
+    }
+
+    public async Task<TEntity> RemoveRangeAsync(TEntity[] entity)
+    {
+        _dbSet.RemoveRange(entity);
+        return await Task.FromResult(entity.Last());
     }
 }
