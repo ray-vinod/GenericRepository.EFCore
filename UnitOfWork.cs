@@ -5,28 +5,20 @@ namespace GenericRepository.EFCore;
 public interface IUnitOfWork : IDisposable
 {
     IRepository<TEntity> Of<TEntity>() where TEntity : class;
-
-    Task<int> CommitChangesAsync(CancellationToken token = default);
+    int SaveChanges();
+    Task<int> SaveChangesAsync(CancellationToken token = default);
 }
-
 
 public class UnitOfWork<TDataContext>(TDataContext context) : IUnitOfWork
     where TDataContext : DbContext
 {
     private readonly TDataContext _context = context;
 
-    public IRepository<TEntity> Of<TEntity>() where TEntity : class
-    {
-        return new Repository<TEntity, TDataContext>(_context);
-    }
+    public IRepository<TEntity> Of<TEntity>() where TEntity : class => new Repository<TEntity, TDataContext>(_context);
 
-    public async Task<int> CommitChangesAsync(CancellationToken token = default)
-    {
-        return await _context.SaveChangesAsync(token);
-    }
+    public int SaveChanges() => _context.SaveChanges();
 
-    public void Dispose()
-    {
-        _context.Dispose();
-    }
+    public async Task<int> SaveChangesAsync(CancellationToken token = default) => await _context.SaveChangesAsync(token);
+
+    public void Dispose() => _context.Dispose();
 }

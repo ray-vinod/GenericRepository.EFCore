@@ -22,7 +22,6 @@ public interface IRepository<TEntity> where TEntity : class
     Task<TEntity> RemoveRangeAsync(TEntity[] entity);
 }
 
-
 public class Repository<TEntity, TDataContext>(TDataContext context)
     : IRepository<TEntity>
     where TEntity : class
@@ -89,15 +88,9 @@ public class Repository<TEntity, TDataContext>(TDataContext context)
         }
     }
 
-    public async Task<List<TEntity>?> RecordsAsync()
-    {
-        return await Entity().ToListAsync();
-    }
+    public async Task<List<TEntity>?> RecordsAsync() => await Entity().ToListAsync();
 
-    public async Task<TEntity?> FindByIdAsync(object id)
-    {
-        return await _dbSet.FindAsync(id);
-    }
+    public async Task<TEntity?> FindByIdAsync(object id) => await _dbSet.FindAsync(id);
 
     public async Task<TEntity?> FindByNameAsync(string name)
     {
