@@ -5,12 +5,12 @@ namespace GenericRepository;
 
 public interface IRepository<TEntity> where TEntity : class
 {
-    IQueryable<TEntity> GetEntity();
+    IQueryable<TEntity> Entity();
 
     Task<TEntity?> FirstOrDefaultAsync(Expression<Func<TEntity, bool>>? predicate = null);
-    Task<TEntity?> GetByIdAsync(object id);
-    Task<TEntity?> GetByNameAsync(string name);
-    Task<List<TEntity>?> GetAllAsync();
+    Task<TEntity?> FindByIdAsync(object id);
+    Task<TEntity?> FindByNameAsync(string name);
+    Task<List<TEntity>?> RecordsAsync();
 
     Task<TEntity> AddAsync(TEntity entity);
     Task<TEntity> AddRangeAsync(TEntity[] entity);
@@ -21,7 +21,6 @@ public interface IRepository<TEntity> where TEntity : class
     Task<TEntity> RemoveAsync(TEntity entity);
     Task<TEntity> RemoveRangeAsync(TEntity[] entity);
 }
-
 
 public class Repository<TEntity, TDataContext>(TDataContext context)
     : IRepository<TEntity>
@@ -64,7 +63,7 @@ public class Repository<TEntity, TDataContext>(TDataContext context)
         return await Task.FromResult(entity);
     }
 
-    public IQueryable<TEntity> GetEntity()
+    public IQueryable<TEntity> Entity()
     {
         IQueryable<TEntity>? query = _dbSet;
         return query.AsQueryable();
@@ -89,17 +88,11 @@ public class Repository<TEntity, TDataContext>(TDataContext context)
         }
     }
 
-    public async Task<List<TEntity>?> GetAllAsync()
-    {
-        return await GetEntity().ToListAsync();
-    }
+    public async Task<List<TEntity>?> RecordsAsync() => await Entity().ToListAsync();
 
-    public async Task<TEntity?> GetByIdAsync(object id)
-    {
-        return await _dbSet.FindAsync(id);
-    }
+    public async Task<TEntity?> FindByIdAsync(object id) => await _dbSet.FindAsync(id);
 
-    public async Task<TEntity?> GetByNameAsync(string name)
+    public async Task<TEntity?> FindByNameAsync(string name)
     {
         try
         {
