@@ -49,6 +49,8 @@ jobs:
           draft: false
           prerelease: false
           body: "Release notes for version ${{ github.ref_name }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload NuGet package to GitHub Release
         uses: actions/upload-release-asset@v1
