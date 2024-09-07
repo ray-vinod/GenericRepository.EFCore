@@ -1,0 +1,51 @@
+name: Publish NuGet Package
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate version
+        run: |
+          if [[ ! ${{ github.ref }} =~ ^refs/tags/v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "Invalid version tag!"
+            exit 1
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Run tests
+        run: dotnet test --configuration Release --no-restore --no-build
+
+      - name: Build the project
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Pack NuGet package
+        run: dotnet pack --configuration Release --no-build
+
+      - name: Push to nuget.org
+        run: dotnet nuget push "bin/Release/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
+
+      - name: Add GitHub Packages source
+        run: dotnet nuget add source --username ray-vinod --password ${{ secrets.TOKEN_SECRET }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/ray-vinod/index.json"
+
+      - name: Push to GitHub Packages
+        run: dotnet nuget push "bin/Release/*.nupkg" --source github --api-key ${{ secrets.TOKEN_SECRET }}
+
+      - name: Notify on failure
+        if: failure()
+        run: echo "Publishing to NuGet failed!"
