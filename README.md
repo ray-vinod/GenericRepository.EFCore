@@ -80,7 +80,7 @@ app.MapGet("/api/products/{id:int}", async (int id, IUnitOfWork repo) =>
 app.MapGet("/api/products/{id:int}", async (int id, IUnitOfWork repo) =>
 {
     var products = await repo.Of<Product>().FirstOrDefaultAsync(x=>x.Id == id);
-    return Resutls.Ok(products);
+    return Results.Ok(products);
 });
 
 app.MapGet("/api/products/{name}", async (string name, IUnitOfWork repo) =>
