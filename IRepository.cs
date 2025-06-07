@@ -1,22 +1,24 @@
 using System.Linq.Expressions;
-using Microsoft.EntityFrameworkCore;
 
 namespace GenericRepository;
+
 public interface IRepository<TEntity> where TEntity : class
 {
-    IQueryable<TEntity> Entity();
+    Task<TEntity?> GetByIdAsync(params object[] id);
+    Task<IEnumerable<TEntity>?> GetAllAsync(bool includeAuditable = true);
 
-    Task<TEntity?> FirstOrDefaultAsync(Expression<Func<TEntity, bool>>? predicate = null);
-    Task<TEntity?> FindByIdAsync(object id);
-    Task<TEntity?> FindByNameAsync(string name);
-    Task<List<TEntity>?> RecordsAsync();
+    Task<IEnumerable<TEntity>?> GetAllAsync(Expression<Func<TEntity, bool>> predicate, bool includeAuditable = true, params Expression<Func<TEntity, object>>[] includes);
 
-    Task<TEntity> AddAsync(TEntity entity);
-    Task<TEntity> AddRangeAsync(TEntity[] entity);
+    Task<TEntity?> FindAsync(Expression<Func<TEntity, bool>> predicate, bool includeAuditable = true, params Expression<Func<TEntity, object>>[] includes);
 
-    Task<TEntity> UpdateAsync(TEntity entity);
+    IQueryable<TEntity> AsQueryable(bool includeAuditable = true);
+    Task AddAsync(TEntity entity);
+    Task AddRangeAsync(IEnumerable<TEntity> entities);
+    Task UpdateAsync(TEntity entity);
+    Task DeleteAsync(params object[] id);
+    Task DeleteAsync(TEntity entity);
+    Task SoftDeleteAsync(TEntity entity);
+    Task RestoreAsync(TEntity entity);
 
-    Task<TEntity> RemoveAsync(object id);
-    Task<TEntity> RemoveAsync(TEntity entity);
-    Task<TEntity> RemoveRangeAsync(TEntity[] entity);
+    Task<PagedList<TEntity>> GetPagedAsync(int pageNumber, int pageSize, Expression<Func<TEntity, bool>>? predicate = null, Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null, bool includeAuditable = true, params Expression<Func<TEntity, object>>[] includes);
 }
