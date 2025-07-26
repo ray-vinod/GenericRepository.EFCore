@@ -10,12 +10,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Validate Tag
+      - name: Validate Tag Format
         run: |
-          if [[ ! ${{ github.ref }} =~ ^refs/tags/v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
-            echo "Invalid Tag & Version"
+          if [[ ! "${GITHUB_REF_NAME}" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "Invalid Tag Format. Use vX.Y.Z"
             exit 1
           fi
+
+      - name: Set VERSION
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
 
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -23,7 +26,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0'
+          dotnet-version: '9.0.x'
 
       - name: Restore Dependencies
         run: dotnet restore
@@ -34,44 +37,51 @@ jobs:
       - name: Build Project
         run: dotnet build --configuration Release --no-restore
 
-      - name: Create NuGet
-        run: dotnet pack --configuration Release
+      - name: Create NuGet Package
+        run: dotnet pack --configuration Release --no-build
 
-      - name: Set Version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+      - name: List Built Packages
+        run: ls -al bin/Release/*.nupkg
 
       - name: Push To NuGet Gallery
         run: |
-          dotnet nuget push "bin/Release/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }} \
-          --skip-duplicate || echo "Package GenericRepository.EFCore.${{ env.VERSION }}.nupkg already exists on NuGet. Skipping push."
+          dotnet nuget push bin/Release/*.nupkg \
+            --source https://api.nuget.org/v3/index.json \
+            --api-key ${{ secrets.NUGET_API_KEY }} \
+            --skip-duplicate
 
-      - name: Push To GitHub
+      - name: Push To GitHub Packages
         run: |
-          output=$(dotnet nuget push "bin/Release/*.nupkg" --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --api-key ${{ secrets.GH_API_SECRET }} --skip-duplicate)
-          echo "$output"
+          dotnet nuget push bin/Release/*.nupkg \
+            --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" \
+            --api-key ${{ secrets.GH_API_SECRET }} \
+            --skip-duplicate
 
-          if echo "$output" | grep -q 'already exists'; then
-            echo "$output"
-            exit 1
-          fi
-
-      - name: Create GitHub_Release
-        id: create_release
-        uses: actions/create-release@v1.1.4
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
           draft: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GH_API_SECRET }}
 
-      - name: Push To GitHub_Release
-        uses: actions/upload-release-asset@v1.0.2
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: bin/Release/GenericRepository.EFCore.${{ env.VERSION }}.nupkg
-          asset_name: GenericRepository.EFCore.${{ env.VERSION }}.nupkg
-          asset_content_type: application/octet-stream
+      - name: Delete Existing Asset If Exists
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_API_SECRET }}
+          GH_TOKEN: ${{ secrets.GH_API_SECRET }}
+        run: |
+          ASSET_NAME="GenericRepository.EFCore.${{ env.VERSION }}.nupkg"
+          if gh release view ${{ github.ref_name }} --json assets -q '.assets[].name' | grep "$ASSET_NAME"; then
+            gh release delete-asset ${{ github.ref_name }} "$ASSET_NAME" --yes
+          else
+            echo "No existing asset to delete."
+          fi
+
+      - name: Upload Release Asset (via gh CLI)
+        env:
+          GH_TOKEN: ${{ secrets.GH_API_SECRET }}
+        run: |
+          gh release upload ${{ github.ref_name }} \
+            "bin/Release/GenericRepository.EFCore.${{ env.VERSION }}.nupkg" \
+            --clobber
