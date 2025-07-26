@@ -4,6 +4,13 @@
 - In this read entities with expression filters, sorting and include other dependent entities
 - It also return a queryable entity on which you can apply other linq extensions
 - In this new version has introduced IAuditable, Auditable and PagedList objects for the include auditable fields and paging.
+- Update bug fixed and add auto excludes soft-deleted records
+
+```code
+    await repo.GetAllAsync(); // excludes IsDeleted
+    await repo.GetAllAsync(false); // includes all
+
+```
 
 ## How to Use
 
