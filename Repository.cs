@@ -108,11 +108,15 @@ public class Repository<TEntity, TDataContext>(TDataContext context) : IReposito
         };
     }
 
-    public Task RestoreAsync(TEntity entity)
+    public async Task RestoreAsync(TEntity entity)
     {
-        _context.Entry(entity).State = EntityState.Detached;
-        _dbSet.Attach(entity);
-        return Task.CompletedTask;
+        if (entity is IAuditable auditable)
+        {
+            auditable.IsDeleted = false;
+            auditable.DeletedAt = DateTime.UtcNow;
+
+            await UpdateAsync(entity);
+        }
     }
 
     public async Task SoftDeleteAsync(TEntity entity)
