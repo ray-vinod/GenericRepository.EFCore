@@ -1,10 +1,10 @@
 # GenericRepository
 
 - This is a generic repository of basic **CRUD** operation
-- In this read entities with expression filters, sorting and include other dependent entities
+- In this read entities with expression filters, sorting and auditable
 - It also return a queryable entity on which you can apply other linq extensions
-- In this new version has introduced IAuditable, Auditable and PagedList objects for the include auditable fields and paging.
-- Update bug fixed and add auto excludes soft-deleted records
+- In this new version has introduced auditable fields and paging.
+- Update bug fixed and add auto excludes soft and force deletion of records
 
 ```code
     await repo.GetAllAsync(); // excludes IsDeleted

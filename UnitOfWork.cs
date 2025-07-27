@@ -31,11 +31,6 @@ public class UnitOfWork<TDataContext>(TDataContext context) : IUnitOfWork where 
                     break;
                 case EntityState.Unchanged:
                     break;
-                    // case EntityState.Deleted:
-                    //     entry.State = EntityState.Modified;
-                    //     entry.Entity.DeletedAt = timeStamp;
-                    //     entry.Entity.IsDeleted = true;
-                    //     break;
             }
         }
 
