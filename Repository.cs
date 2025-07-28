@@ -102,7 +102,7 @@ public class Repository<TEntity, TDataContext>(TDataContext context) : IReposito
         return new PagedList<TEntity>
         {
             Items = items,
-            TotalItemCount = (int)Math.Ceiling(totalItemCount / (double)pageSize),
+            TotalItemCount = totalItemCount,
             PageNumber = pageNumber,
             PageSize = pageSize,
         };
