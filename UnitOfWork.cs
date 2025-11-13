@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace GenericRepository;
 
@@ -35,6 +36,23 @@ public class UnitOfWork<TDataContext>(TDataContext context) : IUnitOfWork where 
         }
 
         return _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<bool> DatabaseExistsAsync()
+    {
+        try
+        {
+            return await _context.Database.CanConnectAsync();
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public async Task<IDbContextTransaction> BeginTransactionAsync()
+    {
+        return await _context.Database.BeginTransactionAsync();
     }
 
     public void Dispose() => _context.Dispose();

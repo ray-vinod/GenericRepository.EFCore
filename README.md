@@ -1,11 +1,16 @@
 # GenericRepository
+A high-performance, extensible repository providing consistent CRUD operations across all entities.
 
-- This is a generic repository of basic **CRUD** operation.
-- In this read entities with expression filters, sorting and auditable.
-- It also return a queryable entity on which you can apply other linq extensions.
-- In this new version has introduced auditable fields and paging.
-- It support soft and force deletion of records.
-- Enhance performance and add auto excludes soft deleted.
+## Key Features
+- Supports filtering, sorting, and LINQ-based querying with IQueryable.
+- Asynchronous methods for non-blocking database operations.
+- Automatically handles auditable fields (CreatedAt, UpdatedAt, DeletedAt, etc.).
+- Built-in paging for efficient large data handling.
+- Supports both soft delete (auto-excluded from queries) and force delete.
+- Includes transaction support for safe multi-step operations.
+- Ensures database existence before performing operations.
+- Flexible design allowing custom repository implementations per entity.
+
 
 ```code
     await repo.GetAllAsync(); // excludes IsDeleted
